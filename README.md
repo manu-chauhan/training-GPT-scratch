@@ -2,10 +2,10 @@
 
 - Training a GPT model from scratch on Shakespeare data
 - Multiple optimizations:
-  - flash attention from Pytorch
+  - flash (sdpa) attention from Pytorch
   - torch.compile
-  - power of two for vocab size 50257 to 50304
-  - Optimizer
+  - nice number for vocab size 50257 to 50304
+  - Optimizer AdamW with parameters used during GPT2 and GPT3 training
   - grad clipping 
   - cosine LR
 - Ran training for 5000 steps on `input.txt` 
