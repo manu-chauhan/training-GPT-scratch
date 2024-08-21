@@ -796,8 +796,8 @@ Performance degraded for this one (number of tokens per second)
 12. DDP : 
 
     `tokens/second: 211_646`
-
+    logs at: [run_log.out](https://github.com/manu-chauhan/training-GPT2-scratch/blob/main/run_log.out)
     File: [DDP-run.py](DDP-run.py)
+    I forgot if this run was on 2 RTX3090 (likely but token cout should have been more for dual 3090) or other dual GPUs. I deleted instance after the run (this activity has been done many times).
 
-    1. ![](Screenshot2.png)
-    2. ![](Screenshot1.png)
+   ![](Screenshot1.png)
