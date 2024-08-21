@@ -252,6 +252,7 @@ if __name__ == "__main__":
         torch.cuda.synchronize()
         print(f'step : {i+1}, loss: {loss.item()}')
         t1 = time.time()
-        dt = (t1 - t0) * 1000
+        dt = (t1 - t0)
         tokens_per_sec = (train_loader.B * train_loader.T) / (dt)
-        print(f'step : {i + 1} | loss: {loss.item()} | dt: {dt:.2f} ms | tokens/sec: {tokens_per_sec:.2f}')
+        print(
+            f'step : {i + 1} | loss: {loss.item()} | dt: {dt * 1000:.2f} ms | tokens/sec: {tokens_per_sec:.2f}')

@@ -10,7 +10,7 @@
 
    ```
    loaded len : 338025
-   1 epoch = :338025//2048 = 165 batches 
+   1 epoch = :338025//2048 = 165 batches
    step : 1, loss: 10.992466926574707
    step : 1 | loss: 10.992466926574707 | dt: 457.29 ms | tokens/sec: 4.48
    step : 2, loss: 9.362780570983887

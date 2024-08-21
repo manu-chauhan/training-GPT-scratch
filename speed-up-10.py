@@ -229,7 +229,6 @@ class DataLoaderLite:
 
 if __name__ == "__main__":
 
-    # CODE UPDATE HERE
     max_lr = 6e-4
     min_lr = max_lr * 0.1
     warmup_steps = 10
@@ -254,8 +253,8 @@ if __name__ == "__main__":
     # optimizer = torch.optim.AdamW(model.parameters(), lr = 3e-4, betas=(0.9, 0.95), eps=1e-8)
     optimizer = model.configure_optimizers(weight_decay=0.1, learning_rate=6e-4, device_type=device)
 
-    train_loader = DataLoaderLite(B=6, T=1024)
-    model = torch.compile(model, mode='max-autotune')
+    train_loader = DataLoaderLite(B=2, T=64)
+    # model = torch.compile(model, mode='max-autotune')
 
     for step in range(50):
         t0 = time.time()
@@ -272,6 +271,6 @@ if __name__ == "__main__":
 
         optimizer.step()
         t1 = time.time()
-        dt = (t1 - t0) * 1000
+        dt = (t1 - t0)
         tokens_per_sec = (train_loader.B * train_loader.T) / (dt)
-        print(f'step : {step + 1} | loss: {loss.item()} | dt: {dt:.2f} ms | tokens/sec: {tokens_per_sec:.2f}')
+        print(f'step : {step + 1} | loss: {loss.item()} | dt: {dt*1000:.2f} ms | tokens/sec: {tokens_per_sec:_.2f}')
