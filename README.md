@@ -2,7 +2,7 @@
 
 #### Ran first locally on self built system with 1x RTX3080 then on 2xRTX 4090 with DistributedDataParallel on cloud
 
-#### Total 11 files 1 baseline.py + 10 speed-up.py (1-10) or optimizations done
+#### Total 11 files 1 baseline.py + 12 speed-up.py (1-12) or optimizations done
 
 
 
