@@ -236,10 +236,10 @@ class DataLoaderLite:
         self.num_processes = num_processes
         all_files = utilities.get_all_text_dataset("dataset")
         print(f"\nDATALOADERLITE...")
-        
+
         # with open('input.txt', 'r') as f:
         #     text = f.read()
-        
+
         result = utilities.read_from_all_files(all_files)
         # enc = tiktoken.get_encoding('gpt2')
         text = ""
@@ -250,9 +250,9 @@ class DataLoaderLite:
             batch_text = batch_text.split(' ')[:T]
             mini_text = ''
             for tok in batch_text:
-                mini_text += ' '+ tok
+                mini_text += ' ' + tok
             text += mini_text
-            if i>B:
+            if i > B:
                 break
         enc = hindi.load_tokenizer()
         tokens = enc.encode(text)
@@ -280,10 +280,10 @@ class DataLoaderLite:
 
 if __name__ == "__main__":
 
-    max_lr = 6e-4
-    min_lr = max_lr * 0.1
-    warmup_steps = 50
-    max_steps = 2000
+    max_lr = 6e-4*3
+    min_lr = max_lr * 0.15
+    warmup_steps = 100
+    max_steps = 5000
 
 
     def get_lr(it):
@@ -300,39 +300,52 @@ if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'mps' if hasattr(torch.backends, 'mps') and
                                                                             torch.backends.mps.is_available() else 'cpu')
     model = GPT(GPTConfig()).to(device=device)
-    
-    total_batch_size = 544288  # 2**19 = 5,24,288, tokens
-    B = 16
+
+    total_batch_size = 5_24_288  # 2**19 = 5,24,288, tokens
+    B = 20
     T = 1024
 
     gradient_accumulation_steps = total_batch_size // (B * T * ddp_world_size)
 
     train_loader = DataLoaderLite(B=B, T=T, process_rank=ddp_rank, num_processes=ddp_world_size)
-    
+
+    # Load your custom tokenizer
+    tokenizer = hindi.load_tokenizer()  # Assuming your load_tokenizer() function is defined and returns the tokenizer object
+
+    # # Path to the directory containing your .txt files
+    # dataset_dir = 'dataset'
+
+    # # Create the dataset
+    # train_dataset = HindiTextDataset(directory=dataset_dir, tokenizer=tokenizer)
+
+    # # Create the DataLoader with DistributedSampler
+    # train_sampler = DistributedSampler(train_dataset)
+    # train_loader = DataLoader(train_dataset, batch_size=B, sampler=train_sampler)
+
     if master_process:
         print(f"\nTotal effective batch size: {total_batch_size}")
         print(f"\nGrad accumulation steps: {gradient_accumulation_steps}")
-    
+
     # try:
     #     model = torch.compile(model, mode='max-autotune')
     # except Exception as e:
     #     model = torch.compile(model, mode='default')
-    # model = torch.compile(model, mode='default')
+    model = torch.compile(model, mode='default')
 
     if ddp:
         model = DDP(model, device_ids=[ddp_local_rank])
-    
+
     raw_model = model.module if ddp else model
     optimizer = raw_model.configure_optimizers(weight_decay=0.1, learning_rate=6e-4, device_type=device)
 
-
     for step in range(max_steps):
+        # for idx, mini_batch in enumerate(train_loader):
         t0 = time.time()
         optimizer.zero_grad()
 
-        model.require_backward_grad_sync = False # being explicit to disable grad sync as we want to accumulate first
+        model.require_backward_grad_sync = False  # being explicit to disable grad sync as we want to accumulate first
 
-        loss_accumulator = 0.0
+        loss_accumulator = torch.zeros(size=(1, 1), device=device)
         for micro_step in range(gradient_accumulation_steps):
             x, y = train_loader.next_batch()
             x, y = x.to(device=device), y.to(device)
@@ -345,9 +358,10 @@ if __name__ == "__main__":
             loss_accumulator += loss.detach()
 
             if ddp:
-                model.require_backward_grad_sync = (micro_step == gradient_accumulation_steps-1) # enable only on last step
+                model.require_backward_grad_sync = (
+                        micro_step == gradient_accumulation_steps - 1)  # enable only on last step
 
-            loss.backward() # keep updating grad here (adding up)
+            loss.backward()  # keep updating grad here (adding up)
 
         # average loss_accumulator now
         if ddp:
@@ -369,7 +383,9 @@ if __name__ == "__main__":
 
         if master_process:
             print(
-                f'step : {step + 1} | loss: {loss_accumulator.item()} | dt: {dt*1000:.2f} ms | tokens/sec: {tokens_per_sec:_.2f} | norm:{norm:.3f}')
-
+                f'step : {step + 1} | loss: {loss_accumulator.item()} | lr: {lr} | dt: {dt * 1000:.2f} ms | tokens/sec: {tokens_per_sec:_.2f} | norm:{norm:.3f}')
+            if step>100 and step% 50 == 0:
+                chk = {'model':model.state_dict()}
+                torch.save(chk, f"model_epoch_{step}.pth")
 if ddp:
     destroy_process_group()
